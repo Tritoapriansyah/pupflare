@@ -39,7 +39,7 @@ app.use(bodyParser.raw());
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     };
     if (process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD)
-        options.executablePath = '/usr/bin/chromium-browser';
+        options.executablePath = '/usr/bin/chromium';
     if (process.env.PUPPETEER_HEADFUL)
         options.headless = false;
     if (process.env.PUPPETEER_USERDATADIR)

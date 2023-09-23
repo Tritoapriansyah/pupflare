@@ -5,8 +5,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const jsesc = require('jsesc');
 
-StealthPlugin.enabledEvasions.delete('chrome.app')
-
 const headersToRemove = [
     "host", "user-agent", "accept", "accept-encoding", "content-length",
     "forwarded", "x-forwarded-proto", "x-forwarded-for", "x-cloud-trace-context"

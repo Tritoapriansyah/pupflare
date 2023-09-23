@@ -2,11 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "yarnCommand": "install" }
-    },
-    {
       "src": "index.js",
       "use": "@vercel/node",
       "config": { "yarnCommand": "start" }

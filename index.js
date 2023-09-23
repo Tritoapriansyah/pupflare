@@ -1,10 +1,8 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const Koa = require('koa');
-const bodyParser = require('koa-bodyparser');
-const app = new Koa();
-app.use(bodyParser());
+const express = require('express');
+const bodyParser = require('body-parser');
 const jsesc = require('jsesc');
 
 const headersToRemove = [
@@ -12,6 +10,9 @@ const headersToRemove = [
     "forwarded", "x-forwarded-proto", "x-forwarded-for", "x-cloud-trace-context"
 ];
 const responseHeadersToRemove = ["Accept-Ranges", "Content-Length", "Keep-Alive", "Connection", "content-encoding", "set-cookie"];
+
+const app = express();
+app.use(bodyParser.raw());
 
 (async () => {
     let options = {
@@ -27,20 +28,21 @@ const responseHeadersToRemove = ["Accept-Ranges", "Content-Length", "Keep-Alive"
     if (process.env.PUPPETEER_PROXY)
         options.args.push(`--proxy-server=${process.env.PUPPETEER_PROXY}`);
     const browser = await puppeteer.launch(options);
-    app.use(async ctx => {
-        if (ctx.query.url) {
-            const url = ctx.url.replace("/?url=", "");
+
+    app.use(async (req, res) => {
+        if (req.query.url) {
+            const url = req.query.url;
             let responseBody;
             let responseData;
             let responseHeaders;
             const page = await browser.newPage();
-            if (ctx.method == "POST") {
+            if (req.method == "POST") {
                 await page.removeAllListeners('request');
                 await page.setRequestInterception(true);
                 page.on('request', interceptedRequest => {
                     var data = {
                         'method': 'POST',
-                        'postData': ctx.request.rawBody
+                        'postData': req.body
                     };
                     interceptedRequest.continue(data);
                 });
@@ -71,7 +73,7 @@ const responseHeadersToRemove = ["Accept-Ranges", "Content-Length", "Keep-Alive"
                 if (e.isDownload)
                     await page.close();
             });
-            let headers = ctx.headers;
+            let headers = req.headers;
             headersToRemove.forEach(header => {
                 delete headers[header];
             });
@@ -94,23 +96,27 @@ const responseHeadersToRemove = ["Accept-Ranges", "Content-Length", "Keep-Alive"
                 if (cookies)
                     cookies.forEach(cookie => {
                         const { name, value, secure, expires, domain, ...options } = cookie;
-                        ctx.cookies.set(cookie.name, cookie.value, options);
+                        res.cookie(cookie.name, cookie.value, options);
                     });
             } catch (error) {
                 if (!error.toString().includes("ERR_BLOCKED_BY_CLIENT")) {
-                    ctx.status = 500;
-                    ctx.body = error;
+                    res.status(500).send(error);
+                    return;
                 }
             }
 
             await page.close();
             responseHeadersToRemove.forEach(header => delete responseHeaders[header]);
-            Object.keys(responseHeaders).forEach(header => ctx.set(header, jsesc(responseHeaders[header])));
-            ctx.body = responseData;
+            Object.keys(responseHeaders).forEach(header => res.setHeader(header, jsesc(responseHeaders[header])));
+            res.end(responseData);
         }
         else {
-            ctx.body = "Please specify the URL in the 'url' query string.";
+            res.status(400).send("Please specify the URL in the 'url' query string.");
         }
     });
-    app.listen(process.env.PORT || 3000);
+
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
 })();

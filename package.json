@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "vercel-build": "yum install chromium && yarn install",
     "start": "node index.js"
   },
   "keywords": [],

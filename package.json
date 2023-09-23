@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "vercel-build": "echo \"hello\"",
+    "vercel-build": "yarn add puppeteer-extra-plugin-stealth",
     "start": "node index.js"
   },
   "keywords": [],
